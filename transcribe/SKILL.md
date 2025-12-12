@@ -9,18 +9,19 @@ Speech-to-text using Groq Whisper API.
 
 ## Setup
 
-First check if already configured:
+The script needs `GROQ_API_KEY` environment variable. Check if already set:
 ```bash
-cat {baseDir}/config
+echo $GROQ_API_KEY
 ```
 
-If config doesn't exist, guide the user through setup:
+If not set, guide the user through setup:
 1. Ask if they have a Groq API key
 2. If not, have them sign up at https://console.groq.com/ and create an API key
-3. Create the config file:
+3. Have them add to their shell profile (~/.zshrc or ~/.bashrc):
    ```bash
-   echo 'GROQ_API_KEY="<their-api-key>"' > {baseDir}/config
+   export GROQ_API_KEY="<their-api-key>"
    ```
+4. Then run `source ~/.zshrc` (or restart terminal)
 
 ## Usage
 
