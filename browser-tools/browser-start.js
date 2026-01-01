@@ -1,7 +1,59 @@
 #!/usr/bin/env node
 
 import { spawn, execSync } from "node:child_process";
+import { platform } from "node:os";
+import { existsSync } from "node:fs";
 import puppeteer from "puppeteer-core";
+
+// Platform-specific Chrome executable paths
+const CHROME_PATHS = {
+	darwin: ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"],
+	linux: [
+		"/usr/bin/google-chrome",
+		"/usr/bin/google-chrome-stable",
+		"/usr/bin/chromium",
+		"/usr/bin/chromium-browser",
+		"/snap/bin/chromium",
+	],
+	win32: [
+		"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+		"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+	],
+};
+
+// Platform-specific Chrome profile paths
+const PROFILE_PATHS = {
+	darwin: `${process.env.HOME}/Library/Application Support/Google/Chrome/`,
+	linux: `${process.env.HOME}/.config/google-chrome/`,
+	win32: `${process.env.LOCALAPPDATA}\\Google\\Chrome\\User Data\\`,
+};
+
+function findChrome() {
+	const os = platform();
+	const paths = CHROME_PATHS[os] || [];
+	
+	// Allow override via environment variable
+	if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH)) {
+		return process.env.CHROME_PATH;
+	}
+	
+	for (const p of paths) {
+		if (existsSync(p)) {
+			return p;
+		}
+	}
+	
+	return null;
+}
+
+function getProfilePath() {
+	const os = platform();
+	// Allow override via environment variable
+	if (process.env.CHROME_PROFILE_PATH) {
+		return process.env.CHROME_PROFILE_PATH;
+	}
+	return PROFILE_PATHS[os] || PROFILE_PATHS.linux;
+}
 
 const useProfile = process.argv[2] === "--profile";
 
@@ -35,6 +87,12 @@ try {
 
 if (useProfile) {
 	console.log("Syncing profile...");
+	const profilePath = getProfilePath();
+	if (!existsSync(profilePath)) {
+		console.error(`✗ Chrome profile not found at: ${profilePath}`);
+		console.error("  Set CHROME_PROFILE_PATH environment variable to override");
+		process.exit(1);
+	}
 	execSync(
 		`rsync -a --delete \
 			--exclude='SingletonLock' \
@@ -45,14 +103,22 @@ if (useProfile) {
 			--exclude='*/Current Tabs' \
 			--exclude='*/Last Session' \
 			--exclude='*/Last Tabs' \
-			"${process.env.HOME}/Library/Application Support/Google/Chrome/" "${SCRAPING_DIR}/"`,
+			"${profilePath}" "${SCRAPING_DIR}/"`,
 		{ stdio: "pipe" },
 	);
 }
 
+// Find Chrome executable
+const chromePath = findChrome();
+if (!chromePath) {
+	console.error("✗ Chrome/Chromium not found");
+	console.error("  Install Chrome or set CHROME_PATH environment variable");
+	process.exit(1);
+}
+
 // Start Chrome with flags to force new instance
 spawn(
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	chromePath,
 	[
 		"--remote-debugging-port=9222",
 		`--user-data-dir=${SCRAPING_DIR}`,
