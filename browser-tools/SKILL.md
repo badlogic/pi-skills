@@ -19,8 +19,9 @@ npm install
 ## Start Chrome
 
 ```bash
-{baseDir}/browser-start.js              # Fresh profile
-{baseDir}/browser-start.js --profile    # Copy user's profile (cookies, logins)
+{baseDir}/browser-start.js                   # Fresh profile
+{baseDir}/browser-start.js --profile         # Copy last used profile (cookies, logins)
+{baseDir}/browser-start.js --profile "Work"  # Copy specific profile by name
 ```
 
 Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user's authentication state.
