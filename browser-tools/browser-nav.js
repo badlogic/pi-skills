@@ -30,7 +30,11 @@ if (newTab) {
 	await p.goto(url, { waitUntil: "domcontentloaded" });
 	console.log("✓ Opened:", url);
 } else {
-	const p = (await b.pages()).at(-1);
+	const pages = await b.pages();
+	let p = pages.at(-1);
+	if (!p) {
+		p = await b.newPage();
+	}
 	await p.goto(url, { waitUntil: "domcontentloaded" });
 	console.log("✓ Navigated to:", url);
 }
