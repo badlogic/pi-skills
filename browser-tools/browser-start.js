@@ -8,14 +8,7 @@ import puppeteer from "puppeteer-core";
 
 const args = process.argv.slice(2);
 
-const usage = () => {
-	console.log("Usage: browser-start.js [--profile[=name] | --profile-last-used]");
-	console.log("\nOptions:");
-	console.log("  --profile [name]        Copy your Chrome profile (cookies, logins).");
-	console.log("                          If name is omitted, use Default profile.");
-	console.log("  --profile-last-used     Copy the last used profile from Local State.");
-	process.exit(1);
-};
+const usage = () => { console.log("Usage: browser-start.js [--profile[=name] | --profile-last-used]"); console.log("\nOptions:"); console.log("  --profile [name]        Copy your Chrome profile (cookies, logins)."); console.log("                          If name is omitted, use Default profile."); console.log("  --profile-last-used     Copy the last used profile from Local State."); process.exit(1); };
 
 let profileMode = null;
 let requestedProfile = null;
