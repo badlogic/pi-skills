@@ -177,9 +177,7 @@ const resolveNamedProfile = async (requestedName, entries) => {
 		for (const match of nameMatches) {
 			console.error(`  - ${match.name} (${match.dir})`);
 		}
-		console.error(
-			"Use --profile \"Name (Profile X)\" or --profile \"Profile X\" to select a directory.",
-		);
+		console.error("Use --profile \"Name (Profile X)\" or --profile \"Profile X\" to select a directory.");
 		process.exit(1);
 	}
 
@@ -249,10 +247,7 @@ execSync(`mkdir -p "${SCRAPING_DIR}"`, { stdio: "ignore" });
 
 // Remove SingletonLock to allow new instance
 try {
-	execSync(
-		`rm -f "${SCRAPING_DIR}/SingletonLock" "${SCRAPING_DIR}/SingletonSocket" "${SCRAPING_DIR}/SingletonCookie"`,
-		{ stdio: "ignore" },
-	);
+	execSync(`rm -f "${SCRAPING_DIR}/SingletonLock" "${SCRAPING_DIR}/SingletonSocket" "${SCRAPING_DIR}/SingletonCookie"`, { stdio: "ignore" });
 } catch {}
 
 if (useProfile) {
@@ -310,6 +305,4 @@ if (!connected) {
 	process.exit(1);
 }
 
-console.log(
-	`✓ Chrome started on :9222${useProfile ? ` with profile ${profileLabel ?? "Default"}` : ""}`,
-);
+console.log(`✓ Chrome started on :9222${useProfile ? ` with profile ${profileLabel ?? "Default"}` : ""}`);

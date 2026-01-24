@@ -25,7 +25,7 @@ npm install
 {baseDir}/browser-start.js --profile-last-used    # Copy last used profile
 ```
 
-Launch Chrome with remote debugging on `:9222`.
+Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user's authentication state.
 
 **Default behavior:** when the user does **not** mention a profile, use a fresh profile (`browser-start.js` with no flags).
 
