@@ -20,7 +20,7 @@ npm install
 
 ```bash
 {baseDir}/browser-start.js                        # Fresh profile
-{baseDir}/browser-start.js --profile              # Copy Default profile (cookies, logins)
+{baseDir}/browser-start.js --profile              # Copy default user profile (cookies, logins)
 {baseDir}/browser-start.js --profile "Work"       # Copy specific profile by name
 {baseDir}/browser-start.js --profile-last-used    # Copy last used profile
 ```
