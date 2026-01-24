@@ -19,12 +19,31 @@ npm install
 ## Start Chrome
 
 ```bash
-{baseDir}/browser-start.js                   # Fresh profile
-{baseDir}/browser-start.js --profile         # Copy last used profile (cookies, logins)
-{baseDir}/browser-start.js --profile "Work"  # Copy specific profile by name
+{baseDir}/browser-start.js                        # Fresh profile
+{baseDir}/browser-start.js --profile              # Copy Default profile (cookies, logins)
+{baseDir}/browser-start.js --profile "Work"       # Copy specific profile by name
+{baseDir}/browser-start.js --profile-last-used    # Copy last used profile
 ```
 
-Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user's authentication state.
+Launch Chrome with remote debugging on `:9222`.
+
+**Default behavior:** when the user does **not** mention a profile, use a fresh profile (`browser-start.js` with no flags).
+
+**When to use profiles:**
+- User says "with profile" or "use my profile" **without naming one** → use `--profile` (Default profile).
+- User names a profile (e.g., "pi profile" or "profile pi") → resolve it and use `--profile "Profile X"`.
+- User explicitly says "last used" → use `--profile-last-used`.
+
+## Profiles
+
+```bash
+{baseDir}/browser-profiles.js
+```
+
+When a user asks for a profile by name:
+1. Run `browser-profiles.js` and review the list (`Name (Profile X)`).
+2. If exactly one entry matches, use its directory with `browser-start.js --profile "Profile X"`.
+3. If there is no clear match or multiple matches, show the list and ask the user to pick.
 
 ## Navigate
 
