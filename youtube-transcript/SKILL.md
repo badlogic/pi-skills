@@ -9,15 +9,16 @@ Fetch transcripts from YouTube videos.
 
 ## Setup
 
+From the skill directory, run:
+
 ```bash
-cd {baseDir}
 npm install
 ```
 
 ## Usage
 
 ```bash
-{baseDir}/transcript.js <video-id-or-url>
+./transcript.js <video-id-or-url>
 ```
 
 Accepts video ID or full URL:

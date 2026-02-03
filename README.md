@@ -95,10 +95,8 @@ description: Short description shown to agent
 # Instructions
 
 Detailed instructions here...
-Helper files available at: {baseDir}/
+Reference helper files with paths relative to the skill directory (e.g., `./tool.sh`).
 ```
-
-The `{baseDir}` placeholder is replaced with the skill's directory path at runtime.
 
 ## Requirements
 
