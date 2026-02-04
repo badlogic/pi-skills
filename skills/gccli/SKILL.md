@@ -55,8 +55,15 @@ Use `primary` as calendarId for the main calendar.
 
 ## Date/Time Format
 
-- Timed events: `YYYY-MM-DDTHH:MM:SSZ` (UTC) or `YYYY-MM-DDTHH:MM:SS` (local)
-- All-day events: `YYYY-MM-DD` with `--all-day` flag
+All `--from`, `--to`, `--start`, and `--end` parameters require a timezone. Valid formats:
+
+- `YYYY-MM-DDTHH:MM:SSZ` (UTC)
+- `YYYY-MM-DDTHH:MM:SS±HH:MM` (with timezone offset, e.g., `2026-02-03T10:00:00-08:00`)
+
+**Note:** Local time without timezone (`YYYY-MM-DDTHH:MM:SS`) does NOT work and will return "Bad Request" or "Missing time zone definition".
+
+For all-day events only:
+- `YYYY-MM-DD` with the `--all-day` flag (create command only)
 
 ## Data Storage
 
