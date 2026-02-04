@@ -50,6 +50,7 @@ git clone https://github.com/badlogic/pi-skills ~/pi-skills
 mkdir -p ~/.claude/skills
 ln -s ~/pi-skills/brave-search ~/.claude/skills/brave-search
 ln -s ~/pi-skills/browser-tools ~/.claude/skills/browser-tools
+ln -s ~/pi-skills/firecrawl-cli ~/.claude/skills/firecrawl-cli
 ln -s ~/pi-skills/gccli ~/.claude/skills/gccli
 ln -s ~/pi-skills/gdcli ~/.claude/skills/gdcli
 ln -s ~/pi-skills/gmcli ~/.claude/skills/gmcli
@@ -61,6 +62,7 @@ ln -s ~/pi-skills/youtube-transcript ~/.claude/skills/youtube-transcript
 mkdir -p .claude/skills
 ln -s ~/pi-skills/brave-search .claude/skills/brave-search
 ln -s ~/pi-skills/browser-tools .claude/skills/browser-tools
+ln -s ~/pi-skills/firecrawl-cli .claude/skills/firecrawl-cli
 ln -s ~/pi-skills/gccli .claude/skills/gccli
 ln -s ~/pi-skills/gdcli .claude/skills/gdcli
 ln -s ~/pi-skills/gmcli .claude/skills/gmcli
@@ -75,6 +77,7 @@ ln -s ~/pi-skills/youtube-transcript .claude/skills/youtube-transcript
 |-------|-------------|
 | [brave-search](brave-search/SKILL.md) | Web search and content extraction via Brave Search |
 | [browser-tools](browser-tools/SKILL.md) | Interactive browser automation via Chrome DevTools Protocol |
+| [firecrawl-cli](firecrawl-cli/SKILL.md) | Web scraping, search, crawling, and AI-powered extraction via Firecrawl |
 | [gccli](gccli/SKILL.md) | Google Calendar CLI for events and availability |
 | [gdcli](gdcli/SKILL.md) | Google Drive CLI for file management and sharing |
 | [gmcli](gmcli/SKILL.md) | Gmail CLI for email, drafts, and labels |
@@ -106,6 +109,7 @@ Some skills require additional setup. Generally, the agent will walk you through
 
 - **brave-search**: Requires Node.js. Run `npm install` in the skill directory.
 - **browser-tools**: Requires Chrome and Node.js. Run `npm install` in the skill directory.
+- **firecrawl-cli**: Requires Node.js. Install globally with `npm install -g firecrawl-cli`. Authenticate with `firecrawl login --browser`.
 - **gccli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gccli`.
 - **gdcli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gdcli`.
 - **gmcli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gmcli`.
