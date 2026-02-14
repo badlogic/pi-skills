@@ -25,7 +25,9 @@ npm install
 
 Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user's authentication state.
 
-## Navigate
+## Core Tools
+
+### Navigate
 
 ```bash
 {baseDir}/browser-nav.js https://example.com
@@ -34,24 +36,42 @@ Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user
 
 Navigate to URLs. Use `--new` flag to open in a new tab instead of reusing current tab.
 
-## Evaluate JavaScript
+### Page Structure
+
+```bash
+{baseDir}/browser-page-structure.js
+```
+
+**Use this FIRST when exploring unknown pages.** Returns comprehensive page analysis as JSON:
+
+- **Location**: Current URL, path, and page title
+- **Links**: All links (a[href], [role="link"]) with text, href, and semantic location (nav/header/main/footer/aside)
+- **Navigation**: Specifically extracted nav/header links with current page indicators
+- **Outline**: Page structure via h1, h2, h3 headings
+- **Landmarks**: Count of semantic regions (nav, main, header, footer, sidebar, search)
+- **Interactive**: Count of buttons, forms, inputs, menus, tabs, dialogs
+- **Forms**: Detailed form info including fields, labels, and types
+
+Use this to understand page structure, discover navigation options, and find interactive elements before taking actions.
+
+### Evaluate JavaScript
 
 ```bash
 {baseDir}/browser-eval.js 'document.title'
 {baseDir}/browser-eval.js 'document.querySelectorAll("a").length'
 ```
 
-Execute JavaScript in the active tab. Code runs in async context. Use this to extract data, inspect page state, or perform DOM operations programmatically.
+Execute JavaScript in the active tab. Code runs in async context. Use this to extract specific data, inspect state, or perform DOM operations after understanding page structure.
 
-## Screenshot
+### Screenshot
 
 ```bash
 {baseDir}/browser-screenshot.js
 ```
 
-Capture current viewport and return temporary file path. Use this to visually inspect page state or verify UI changes.
+Capture current viewport and return temporary file path. Use sparingly - prefer DOM inspection via `browser-page-structure.js` or `browser-eval.js` for efficiency.
 
-## Pick Elements
+### Pick Elements
 
 ```bash
 {baseDir}/browser-pick.js "Click the submit button"
@@ -64,7 +84,7 @@ Common use cases:
 - User says "extract data from these items" → Use this tool to let them select the elements
 - When you need specific selectors but the page structure is complex or ambiguous
 
-## Cookies
+### Cookies
 
 ```bash
 {baseDir}/browser-cookies.js
@@ -72,7 +92,7 @@ Common use cases:
 
 Display all cookies for the current tab including domain, path, httpOnly, and secure flags. Use this to debug authentication issues or inspect session state.
 
-## Extract Page Content
+### Extract Page Content
 
 ```bash
 {baseDir}/browser-content.js https://example.com
@@ -87,18 +107,34 @@ Navigate to a URL and extract readable content as markdown. Uses Mozilla Readabi
 - When user needs to visually see or interact with a page
 - Debugging authentication or session issues
 - Scraping dynamic content that requires JS execution
+- Exploring unknown applications or complex web apps
 
----
+## Best Practices
 
-## Efficiency Guide
+### Page Exploration Workflow
+
+**ALWAYS start with page structure analysis:**
+
+```bash
+# 1. Understand the page
+{baseDir}/browser-page-structure.js
+
+# 2. Navigate to discovered links
+{baseDir}/browser-nav.js <exact-url-from-structure>
+
+# 3. Interact with specific elements
+{baseDir}/browser-eval.js '...'
+```
+
+**CRITICAL**: NEVER invent, guess, or construct URLs. Only use URLs exactly as discovered by `browser-page-structure.js`.
 
 ### DOM Inspection Over Screenshots
 
-**Don't** take screenshots to see page state. **Do** parse the DOM directly:
+**Don't** take screenshots to see page state. **Do** use `browser-page-structure.js` or parse the DOM directly:
 
 ```javascript
-// Get page structure
-document.body.innerHTML.slice(0, 5000)
+// Get specific element details
+document.querySelector('#target').textContent
 
 // Find interactive elements
 Array.from(document.querySelectorAll('button, input, [role="button"]')).map(e => ({
@@ -108,9 +144,9 @@ Array.from(document.querySelectorAll('button, input, [role="button"]')).map(e =>
 }))
 ```
 
-### Complex Scripts in Single Calls
+### Efficient JavaScript Evaluation
 
-Wrap everything in an IIFE to run multi-statement code:
+**Complex Scripts**: Wrap everything in an IIFE for multi-statement code:
 
 ```javascript
 (function() {
@@ -126,9 +162,7 @@ Wrap everything in an IIFE to run multi-statement code:
 })()
 ```
 
-### Batch Interactions
-
-**Don't** make separate calls for each click. **Do** batch them:
+**Batch Interactions**: Don't make separate calls for each action:
 
 ```javascript
 (function() {
@@ -138,7 +172,7 @@ Wrap everything in an IIFE to run multi-statement code:
 })()
 ```
 
-### Typing/Input Sequences
+**Typing/Input Sequences**:
 
 ```javascript
 (function() {
@@ -151,7 +185,7 @@ Wrap everything in an IIFE to run multi-statement code:
 })()
 ```
 
-### Reading App/Game State
+### Reading Dynamic State
 
 Extract structured state in one call:
 
@@ -171,68 +205,49 @@ Extract structured state in one call:
 
 ### Waiting for Updates
 
-If DOM updates after actions, add a small delay with bash:
+If DOM updates after actions, add a small delay:
 
 ```bash
 sleep 0.5 && {baseDir}/browser-eval.js '...'
 ```
 
-### Investigate Before Interacting
-
-Always start by understanding the page structure:
+Or use JavaScript promises:
 
 ```javascript
 (function() {
-  return {
-    title: document.title,
-    forms: document.forms.length,
-    buttons: document.querySelectorAll('button').length,
-    inputs: document.querySelectorAll('input').length,
-    mainContent: document.body.innerHTML.slice(0, 3000)
-  };
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(document.querySelector('.result').textContent);
+    }, 500);
+  });
 })()
 ```
 
-### Discover Actual URLs Before Navigating
+### Custom Selectors for Specific Tasks
 
-**CRITICAL**: NEVER invent, guess, or construct URLs. Only use URLs exactly as they appear on the page.
-
-Before navigating, extract all actual navigation options:
+After using `browser-page-structure.js` to understand the page, write targeted selectors:
 
 ```javascript
+// Extract data from discovered forms
 (function() {
-  return {
-    links: Array.from(document.querySelectorAll('a[href]')).map(a => ({
-      text: a.textContent.trim().slice(0, 50),
-      href: a.href
-    })),
-    forms: Array.from(document.querySelectorAll('form[action]')).map(f => ({
-      action: f.action,
-      method: f.method
-    })),
-    buttonsWithActions: Array.from(document.querySelectorAll('button[onclick]')).map(b => ({
-      text: b.textContent.trim().slice(0, 50),
-      onclick: b.getAttribute('onclick')
-    }))
-  };
+  const form = document.querySelector('form[name="login"]');
+  return Array.from(form.elements).map(el => ({
+    name: el.name,
+    type: el.type,
+    value: el.value
+  }));
 })()
 ```
-
-Then target specific elements based on what you find.
-
-### Navigation Exploration
-
-When exploring unknown applications:
 
 ```javascript
+// Navigate using discovered navigation links
 (function() {
-  return {
-    currentPath: window.location.pathname,
-    navbars: Array.from(document.querySelectorAll('nav, [role="navigation"]')).map(el => el.textContent.trim().slice(0, 200)),
-    sidebar: Array.from(document.querySelectorAll('[role="complementary"], aside, .sidebar')).map(el => el.textContent.trim().slice(0, 200)),
-    breadcrumbs: Array.from(document.querySelectorAll('[aria-label*="breadcrumb"], .breadcrumb, .breadcrumbs')).map(el => Array.from(el.querySelectorAll('a')).map(a => a.textContent.trim()))
-  };
+  const link = Array.from(document.querySelectorAll('nav a'))
+    .find(a => a.textContent.includes('Dashboard'));
+  if (link) {
+    link.click();
+    return `Navigated to: ${link.href}`;
+  }
+  return 'Link not found';
 })()
 ```
-
-Build context → discover options → navigate → repeat. Reference discovered options explicitly.
