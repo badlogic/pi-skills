@@ -193,4 +193,46 @@ Always start by understanding the page structure:
 })()
 ```
 
+### Discover Actual URLs Before Navigating
+
+**CRITICAL**: NEVER invent, guess, or construct URLs. Only use URLs exactly as they appear on the page.
+
+Before navigating, extract all actual navigation options:
+
+```javascript
+(function() {
+  return {
+    links: Array.from(document.querySelectorAll('a[href]')).map(a => ({
+      text: a.textContent.trim().slice(0, 50),
+      href: a.href
+    })),
+    forms: Array.from(document.querySelectorAll('form[action]')).map(f => ({
+      action: f.action,
+      method: f.method
+    })),
+    buttonsWithActions: Array.from(document.querySelectorAll('button[onclick]')).map(b => ({
+      text: b.textContent.trim().slice(0, 50),
+      onclick: b.getAttribute('onclick')
+    }))
+  };
+})()
+```
+
 Then target specific elements based on what you find.
+
+### Navigation Exploration
+
+When exploring unknown applications:
+
+```javascript
+(function() {
+  return {
+    currentPath: window.location.pathname,
+    navbars: Array.from(document.querySelectorAll('nav, [role="navigation"]')).map(el => el.textContent.trim().slice(0, 200)),
+    sidebar: Array.from(document.querySelectorAll('[role="complementary"], aside, .sidebar')).map(el => el.textContent.trim().slice(0, 200)),
+    breadcrumbs: Array.from(document.querySelectorAll('[aria-label*="breadcrumb"], .breadcrumb, .breadcrumbs')).map(el => Array.from(el.querySelectorAll('a')).map(a => a.textContent.trim()))
+  };
+})()
+```
+
+Build context → discover options → navigate → repeat. Reference discovered options explicitly.
