@@ -13,6 +13,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "strict": true,
+    "useUnknownInCatchVariables": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

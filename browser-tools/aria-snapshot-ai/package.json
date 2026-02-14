@@ -6,13 +6,16 @@
   },
   "devDependencies": {
     "esbuild": "^0.27.3",
+    "tar": "^7.5.7",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "tsc",
     "bundle": "yarn esbuild bundle.js --bundle --outfile=../aria-snapshot-bundle.js --format=iife --target=es2020 --global-name=__ariaSnapshotBundle",
     "bundle:dev": "yarn esbuild src/ariaSnapshot.ts --bundle --outfile=../aria-snapshot-bundle.js --format=iife --target=es2020 --global-name=__ariaSnapshotBundle --sourcemap",
-    "bundle:watch": "yarn esbuild src/ariaSnapshot.ts --bundle --outfile=../aria-snapshot-bundle.js --format=iife --target=es2020 --global-name=__ariaSnapshotBundle --sourcemap --watch"
+    "bundle:watch": "yarn esbuild src/ariaSnapshot.ts --bundle --outfile=../aria-snapshot-bundle.js --format=iife --target=es2020 --global-name=__ariaSnapshotBundle --sourcemap --watch",
+    "update-from-playwright": "tsx scripts/patch-from-playwright.ts"
   },
   "type": "module",
   "browser": "./bundle/aria-snapshot-ai.min.js",
