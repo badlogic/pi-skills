@@ -146,21 +146,15 @@ await p.evaluateOnNewDocument(ariaBundleCode);
 await p.evaluate(ariaBundleCode);
 const ariaResult = await p.evaluate(() => {
 	try {
-		const snapshot = __ariaSnapshotGenerate(document.body, { mode: 'ai' });
-		const yaml = __ariaSnapshotRender(snapshot, { mode: 'ai' });
-		const refInfo = __ariaSnapshotGetRefInfo(snapshot);
+		const { generateAriaTree, renderAriaTree } = __ariaSnapshotBundle;
+		const snapshot = generateAriaTree(document.body, { mode: 'ai' });
+		const yaml = renderAriaTree(snapshot, { mode: 'ai' });
 
-		return {
-			yaml,
-			refInfo,
-			hasRefs: Object.keys(refInfo).length > 0
-		};
+		return { yaml };
 	} catch (error) {
 		console.error('[aria-snapshot] Error:', error.message);
 		return {
 			yaml: '',
-			refInfo: {},
-			hasRefs: false,
 			error: error.message
 		};
 	}
