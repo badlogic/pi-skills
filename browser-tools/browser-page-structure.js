@@ -1,106 +1,183 @@
 #!/usr/bin/env node
 
 import puppeteer from "puppeteer-core";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { parseArgs } from "node:util";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const { values, positionals } = parseArgs({
+	args: process.argv.slice(2),
+	options: {
+		help: { type: 'boolean', short: 'h' },
+		list: { type: 'boolean', short: 'l' },
+		id: { type: 'string' },
+		page: { type: 'string', short: 'p' },
+	},
+	allowPositionals: true,
+});
+
+if (values.help || positionals.length === 0 && !Object.keys(values).some(k => values[k])) {
+	console.log(`
+browser-page-structure.js - Generate ARIA snapshot from browser page
+
+USAGE:
+  browser-page-structure.js [options]
+
+OPTIONS:
+  -h, --help              Show this help
+  -l, --list              List all pages with their stable IDs
+  --id <targetId>          Select page by stable ID (recommended)
+  -p, --page <index>      Select page by index (may change if tabs moved)
+                           Use 'last' or '-1' for the last tab
+
+EXAMPLES:
+  # List all pages
+  browser-page-structure.js --list
+
+  # Select page by stable ID (recommended - persists across tab moves)
+  browser-page-structure.js --id A5A3072972ABBE08577A7CD3F62DF08D
+
+  # Select first page by index (may break if tabs moved)
+  browser-page-structure.js --page 0
+
+  # Select last page (default)
+  browser-page-structure.js
+  browser-page-structure.js --page last
+
+NOTES:
+  - Stable IDs (from --list) persist across tab moves and navigation
+  - Page indices are shown in --list output for reference but are unstable
+  - Run: browser-start.js to start the browser with remote debugging
+	`);
+	process.exit(0);
+}
 
 const b = await Promise.race([
 	puppeteer.connect({
 		browserURL: "http://localhost:9222",
 		defaultViewport: null,
 	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 10000)),
 ]).catch((e) => {
 	console.error("✗ Could not connect to browser:", e.message);
 	console.error("  Run: browser-start.js");
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
+const allPages = await b.pages();
 
-if (!p) {
-	console.error("✗ No active tab found");
+if (allPages.length === 0) {
+	console.error("✗ No pages found in browser");
 	process.exit(1);
 }
 
-const result = await p.evaluate(() => {
-	// Helper to safely get link information
-	const getLinkInfo = (link) => {
-		const closestLandmark = link.closest('nav, header, main, footer, aside, [role="navigation"], [role="banner"], [role="main"], [role="contentinfo"], [role="complementary"]');
-		return {
-			text: (link.textContent?.trim() || link.getAttribute('aria-label') || '').slice(0, 80),
-			href: link.href || link.getAttribute('data-href') || '',
-			location: closestLandmark?.tagName?.toLowerCase() || 
-			          closestLandmark?.getAttribute('role') || 
-			          'other',
-			ariaCurrent: link.getAttribute('aria-current')
-		};
-	};
+if (values.list) {
+	console.log("# AVAILABLE PAGES");
+	console.log("");
 
-	return {
-		location: {
-			url: window.location.href,
-			path: window.location.pathname,
-			title: document.title
-		},
-		
-		// Current page indicator
-		currentPage: document.querySelector('[aria-current="page"]')?.textContent?.trim() || null,
-		
-		links: Array.from(document.querySelectorAll('a[href], [role="link"]'))
-			.map(getLinkInfo)
-			.filter(link => link.href || link.text) // Remove empty links
-			.slice(0, 200),
-		
-		outline: Array.from(document.querySelectorAll('h1, h2, h3'))
-			.map(h => ({ 
-				level: h.tagName, 
-				text: h.textContent?.trim().slice(0, 80) 
-			})),
-		
-		landmarks: {
-			navigation: Array.from(document.querySelectorAll('nav, [role="navigation"]')).length,
-			main: Array.from(document.querySelectorAll('main, [role="main"]')).length,
-			header: Array.from(document.querySelectorAll('header, [role="banner"]')).length,
-			footer: Array.from(document.querySelectorAll('footer, [role="contentinfo"]')).length,
-			sidebar: Array.from(document.querySelectorAll('aside, [role="complementary"]')).length,
-			search: Array.from(document.querySelectorAll('[role="search"]')).length
-		},
-		
-		interactive: {
-			buttons: document.querySelectorAll('button, [role="button"]').length,
-			forms: document.forms.length,
-			inputs: document.querySelectorAll('input, textarea, select').length,
-			menus: document.querySelectorAll('[role="menu"], [role="menubar"]').length,
-			tabs: document.querySelectorAll('[role="tab"], [role="tablist"]').length,
-			dialogs: document.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]').length
-		},
-		
-		// Navigation-specific elements
-		navigationLinks: Array.from(document.querySelectorAll('nav a, [role="navigation"] a, header a, [role="banner"] a'))
-			.map(a => ({
-				text: (a.textContent?.trim() || a.getAttribute('aria-label') || '').slice(0, 80),
-				href: a.href,
-				current: a.getAttribute('aria-current') === 'page'
-			}))
-			.filter(link => link.href && link.text)
-			.slice(0, 50),
-		
-		forms: Array.from(document.forms).map(f => ({
-			action: f.action,
-			method: f.method,
-			name: f.name,
-			id: f.id,
-			fields: Array.from(f.elements)
-				.filter(el => el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')
-				.map(el => ({
-					type: el.type,
-					name: el.name,
-					id: el.id,
-					label: el.labels?.[0]?.textContent?.trim() || el.getAttribute('aria-label') || el.placeholder || ''
-				}))
-		})).slice(0, 5)
-	};
+	const pageTargets = await Promise.all(allPages.map(async (page, index) => {
+		const target = page.target();
+		const url = page.url();
+		const title = await page.title();
+		return {
+			id: target._targetId,
+			url,
+			title,
+			index,
+		};
+	}));
+
+	pageTargets.forEach(({ id, url, title, index }) => {
+		console.log(`id: ${id}`);
+		console.log(`  index: ${index} (may change if tabs are moved)`);
+		console.log(`  url: ${url}`);
+		console.log(`  title: ${title}`);
+		console.log("");
+	});
+
+	await b.disconnect();
+	process.exit(0);
+}
+
+let p;
+let selectionMethod = '';
+
+if (values.id) {
+	p = allPages.find(page => page.target()._targetId === values.id);
+	selectionMethod = `id="${values.id}"`;
+} else if (values.page) {
+	const indexStr = values.page.toLowerCase();
+	if (indexStr === 'last' || indexStr === '-1') {
+		p = allPages.at(-1);
+		selectionMethod = 'page=last';
+	} else {
+		const index = parseInt(values.page, 10);
+		if (isNaN(index) || index < 0 || index >= allPages.length) {
+			console.error(`✗ Invalid page index: ${values.page} (must be 0-${allPages.length - 1})`);
+			await b.disconnect();
+			process.exit(1);
+		}
+		p = allPages[index];
+		selectionMethod = `page=${index}`;
+	}
+} else {
+	p = allPages.at(-1);
+	selectionMethod = 'page=last (default)';
+}
+
+if (!p) {
+	console.error(`✗ No page found with ${selectionMethod}`);
+	await b.disconnect();
+	process.exit(1);
+}
+
+const ariaBundlePath = path.join(__dirname, 'aria-snapshot-bundle.js');
+
+if (!fs.existsSync(ariaBundlePath)) {
+	console.error("✗ ARIA snapshot bundle not found at:", ariaBundlePath);
+	process.exit(1);
+}
+
+const ariaBundleCode = fs.readFileSync(ariaBundlePath, 'utf8');
+await p.evaluateOnNewDocument(ariaBundleCode);
+await p.evaluate(ariaBundleCode);
+const ariaResult = await p.evaluate(() => {
+	try {
+		const snapshot = __ariaSnapshotGenerate(document.body, { mode: 'ai' });
+		const yaml = __ariaSnapshotRender(snapshot, { mode: 'ai' });
+		const refInfo = __ariaSnapshotGetRefInfo(snapshot);
+
+		return {
+			yaml,
+			refInfo,
+			hasRefs: Object.keys(refInfo).length > 0
+		};
+	} catch (error) {
+		console.error('[aria-snapshot] Error:', error.message);
+		return {
+			yaml: '',
+			refInfo: {},
+			hasRefs: false,
+			error: error.message
+		};
+	}
 });
 
-console.log(JSON.stringify(result, null, 2));
+if (!ariaResult.yaml) {
+	console.error("✗ Could not generate ARIA snapshot:", ariaResult.error || "unknown error");
+	await b.disconnect();
+	process.exit(1);
+}
 
-await b.disconnect();
+const pageUrl = await p.evaluate(() => window.location.href);
+const pageTitle = await p.evaluate(() => document.title);
+console.log(`url: ${pageUrl}`);
+console.log(`title: ${pageTitle}`);
+console.log("");
+console.log(ariaResult.yaml);
+
+// Exit immediately without disconnecting - process termination will clean up
+process.exit(0);

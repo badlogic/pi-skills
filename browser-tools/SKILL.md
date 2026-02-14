@@ -39,20 +39,88 @@ Navigate to URLs. Use `--new` flag to open in a new tab instead of reusing curre
 ### Page Structure
 
 ```bash
+# List all available pages with stable IDs
+{baseDir}/browser-page-structure.js --list
+
+# Get ARIA snapshot of specific page by stable ID (recommended)
+{baseDir}/browser-page-structure.js --id A5A3072972ABBE08577A7CD3F62DF08D
+
+# Get ARIA snapshot of specific page by index (unstable)
+{baseDir}/browser-page-structure.js --page 0
+
+# Get ARIA snapshot of last page (default)
 {baseDir}/browser-page-structure.js
 ```
 
-**Use this FIRST when exploring unknown pages.** Returns comprehensive page analysis as JSON:
+**Use this FIRST when exploring unknown pages.** Returns ARIA snapshot in Playwright-compatible YAML format with:
 
-- **Location**: Current URL, path, and page title
-- **Links**: All links (a[href], [role="link"]) with text, href, and semantic location (nav/header/main/footer/aside)
-- **Navigation**: Specifically extracted nav/header links with current page indicators
-- **Outline**: Page structure via h1, h2, h3 headings
-- **Landmarks**: Count of semantic regions (nav, main, header, footer, sidebar, search)
-- **Interactive**: Count of buttons, forms, inputs, menus, tabs, dialogs
-- **Forms**: Detailed form info including fields, labels, and types
+- **Full ARIA tree** with roles, accessible names, element states
+- **Interactive element refs** (`[ref=e1]`, `[ref=e2]`, etc.)
+- **Links with URLs** for navigation
+- **Element states**: checked, disabled, expanded, pressed, selected, level, active
+- **Cursor indicators** (`[cursor=pointer]`)
 
-Use this to understand page structure, discover navigation options, and find interactive elements before taking actions.
+#### Page Selection
+
+When browser has multiple tabs:
+
+1. **List pages**: `{baseDir}/browser-page-structure.js --list`
+   - Shows each page's stable ID, index, URL, and title
+
+2. **Select by stable ID** (recommended): `--id A5A3072972ABBE08577A7CD3F62DF08D`
+   - Persists across tab moves and navigation
+
+3. **Select by index** (fallback): `--page 0` or `--page last`
+   - Changes if user rearranges tabs
+
+**Always use `--id` from `--list` output** - indices are unstable.
+
+#### LLM Capabilities
+
+With the ARIA snapshot, you can:
+
+- **Understand page structure** (roles, landmarks, hierarchy)
+- **Identify interactive elements** (buttons, links, inputs, forms)
+- **See element states** (checked/unchecked, disabled/enabled, expanded/collapsed)
+- **Navigate using discovered URLs** from links
+- **Construct selectors** using role + name
+- **Plan multi-step interactions** based on visible options
+
+#### Example Output
+
+```yaml
+# PAGE INFO
+url: https://example.com
+title: Example Page
+
+# ARIA SNAPSHOT (Playwright-compatible)
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - link "Home" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - link "About" [ref=e5] [cursor=pointer]:
+        - /url: /about
+  - main [ref=e6]:
+    - heading "Welcome" [level=1] [ref=e7]
+    - button "Submit" [ref=e8] [cursor=pointer]
+    - textbox "Email" [ref=e9]
+```
+
+#### Working with Refs
+
+Refs identify interactive elements. Use them with other tools:
+
+```bash
+# Navigate using discovered URL
+{baseDir}/browser-nav.js https://example.com/about
+
+# Visually select element
+{baseDir}/browser-pick.js "Select the submit button"
+
+# Find elements by role/name (in browser-eval.js)
+Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'Submit')
+```
 
 ### Evaluate JavaScript
 
@@ -62,6 +130,14 @@ Use this to understand page structure, discover navigation options, and find int
 ```
 
 Execute JavaScript in the active tab. Code runs in async context. Use this to extract specific data, inspect state, or perform DOM operations after understanding page structure.
+
+**Ref-Based Interaction**:
+```bash
+# Use refs from browser-page-structure.js for easy element targeting
+./browser-eval.js 'document.querySelector("[ref=e5]").click()'
+```
+
+This works because refs are stored as attributes on the DOM elements, making them queryable with standard CSS selectors.
 
 ### Screenshot
 
@@ -116,21 +192,22 @@ Navigate to a URL and extract readable content as markdown. Uses Mozilla Readabi
 **ALWAYS start with page structure analysis:**
 
 ```bash
-# 1. Understand the page
-{baseDir}/browser-page-structure.js
+# 1. List pages and select by stable ID
+{baseDir}/browser-page-structure.js --list
+{baseDir}/browser-page-structure.js --id A5A3072972ABBE08577A7CD3F62DF08D
 
-# 2. Navigate to discovered links
-{baseDir}/browser-nav.js <exact-url-from-structure>
+# 2. Navigate to discovered links (use exact URLs)
+{baseDir}/browser-nav.js <exact-url-from-snapshot>
 
-# 3. Interact with specific elements
-{baseDir}/browser-eval.js '...'
+# 3. Analyze new page (same stable ID)
+{baseDir}/browser-page-structure.js --id A5A3072972ABBE08577A7CD3F62DF08D
 ```
 
-**CRITICAL**: NEVER invent, guess, or construct URLs. Only use URLs exactly as discovered by `browser-page-structure.js`.
+**CRITICAL**: NEVER invent, guess, or construct URLs. Only use URLs exactly as discovered in ARIA snapshot.
 
 ### DOM Inspection Over Screenshots
 
-**Don't** take screenshots to see page state. **Do** use `browser-page-structure.js` or parse the DOM directly:
+**Don't** take screenshots to see page state. **Do** use `browser-page-structure.js` or `browser-eval.js`:
 
 ```javascript
 // Get specific element details
@@ -146,108 +223,32 @@ Array.from(document.querySelectorAll('button, input, [role="button"]')).map(e =>
 
 ### Efficient JavaScript Evaluation
 
-**Complex Scripts**: Wrap everything in an IIFE for multi-statement code:
+**Wrap in IIFE** for multi-statement code:
 
 ```javascript
 (function() {
-  // Multiple operations
   const data = document.querySelector('#target').textContent;
   const buttons = document.querySelectorAll('button');
-  
-  // Interactions
   buttons[0].click();
-  
-  // Return results
   return JSON.stringify({ data, buttonCount: buttons.length });
 })()
 ```
 
-**Batch Interactions**: Don't make separate calls for each action:
+**Batch interactions** in one call:
 
 ```javascript
 (function() {
-  const actions = ["btn1", "btn2", "btn3"];
-  actions.forEach(id => document.getElementById(id).click());
+  ["btn1", "btn2", "btn3"].forEach(id => document.getElementById(id).click());
   return "Done";
 })()
 ```
 
-**Typing/Input Sequences**:
-
-```javascript
-(function() {
-  const text = "HELLO";
-  for (const char of text) {
-    document.getElementById("key-" + char).click();
-  }
-  document.getElementById("submit").click();
-  return "Submitted: " + text;
-})()
-```
-
-### Reading Dynamic State
-
-Extract structured state in one call:
-
-```javascript
-(function() {
-  const state = {
-    score: document.querySelector('.score')?.textContent,
-    status: document.querySelector('.status')?.className,
-    items: Array.from(document.querySelectorAll('.item')).map(el => ({
-      text: el.textContent,
-      active: el.classList.contains('active')
-    }))
-  };
-  return JSON.stringify(state, null, 2);
-})()
-```
-
-### Waiting for Updates
-
-If DOM updates after actions, add a small delay:
-
-```bash
-sleep 0.5 && {baseDir}/browser-eval.js '...'
-```
-
-Or use JavaScript promises:
+**Wait for DOM updates** with promises:
 
 ```javascript
 (function() {
   return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(document.querySelector('.result').textContent);
-    }, 500);
+    setTimeout(() => resolve(document.querySelector('.result').textContent), 500);
   });
-})()
-```
-
-### Custom Selectors for Specific Tasks
-
-After using `browser-page-structure.js` to understand the page, write targeted selectors:
-
-```javascript
-// Extract data from discovered forms
-(function() {
-  const form = document.querySelector('form[name="login"]');
-  return Array.from(form.elements).map(el => ({
-    name: el.name,
-    type: el.type,
-    value: el.value
-  }));
-})()
-```
-
-```javascript
-// Navigate using discovered navigation links
-(function() {
-  const link = Array.from(document.querySelectorAll('nav a'))
-    .find(a => a.textContent.includes('Dashboard'));
-  if (link) {
-    link.click();
-    return `Navigated to: ${link.href}`;
-  }
-  return 'Link not found';
 })()
 ```
