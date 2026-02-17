@@ -25,6 +25,12 @@ npm install
 
 Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user's authentication state.
 
+> Note: --profile currently only supports Google Chrome profiles on Linux. Chromium users should skip this option.
+
+If Chrome is already running with `--remote-debugging-port=9222` (e.g., configured as the default launcher), the script detects it and attaches to the existing instance — no new process is started. This is the preferred workflow when the user's browser is already CDP-enabled.
+
+Supports both macOS and Linux. On Linux, searches for `google-chrome-stable`, `google-chrome`, `chromium-browser`, or `chromium` in PATH.
+
 ## Core Tools
 
 ### Navigate
