@@ -9,7 +9,7 @@ Web search and content extraction using the official Brave Search API. No browse
 
 ## Setup
 
-Requires a Brave Search API account with a free subscription. A credit card is required to create the free subscription (you won't be charged).
+Requires a Brave Search API account with a subscription. A credit card is required to create the subscription.
 
 1. Create an account at https://api-dashboard.search.brave.com/register
 2. Create a "Free AI" subscription
