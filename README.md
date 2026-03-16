@@ -1,6 +1,6 @@
 # pi-skills
 
-A collection of skills for [pi-coding-agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent), compatible with Claude Code, Codex CLI, Amp, and Droid.
+A collection of skills for [pi-coding-agent](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent), compatible with Claude Code, Codex CLI, Amp, Droid, and gptme.
 
 ## Installation
 
@@ -37,6 +37,23 @@ git clone https://github.com/badlogic/pi-skills ~/.factory/skills/pi-skills
 # Or project-level
 git clone https://github.com/badlogic/pi-skills .factory/skills/pi-skills
 ```
+
+### gptme
+
+[gptme](https://github.com/gptme/gptme) discovers `SKILL.md` files recursively from configured directories. Clone the repo and add it to your `gptme.toml`:
+
+```bash
+git clone https://github.com/badlogic/pi-skills ~/pi-skills
+```
+
+Then add to your project's `gptme.toml` (or `~/.config/gptme/gptme.toml` for global):
+
+```toml
+[lessons]
+dirs = ["lessons", "~/pi-skills"]
+```
+
+gptme will find and index all `SKILL.md` files automatically.
 
 ### Claude Code
 
