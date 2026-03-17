@@ -40,20 +40,17 @@ git clone https://github.com/badlogic/pi-skills .factory/skills/pi-skills
 
 ### gptme
 
-[gptme](https://github.com/gptme/gptme) discovers `SKILL.md` files recursively from configured directories. Clone the repo and add it to your `gptme.toml`:
+[gptme](https://github.com/gptme/gptme) auto-discovers `SKILL.md` files from standard paths — no config changes needed. Clone to any supported location:
 
 ```bash
-git clone https://github.com/badlogic/pi-skills ~/pi-skills
+# User-level (cross-platform standard, works across multiple agents)
+git clone https://github.com/badlogic/pi-skills ~/.agents/skills/pi-skills
+
+# Or gptme-native path
+git clone https://github.com/badlogic/pi-skills ~/.config/gptme/skills/pi-skills
 ```
 
-Then add to your project's `gptme.toml` (or `~/.config/gptme/gptme.toml` for global):
-
-```toml
-[lessons]
-dirs = ["lessons", "~/pi-skills"]
-```
-
-gptme will find and index all `SKILL.md` files automatically.
+gptme will find all skills automatically. If you've already installed for Claude Code (`~/.claude/skills/`), gptme picks those up too — zero additional setup.
 
 ### Claude Code
 
