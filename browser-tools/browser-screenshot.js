@@ -4,6 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 
+const args = process.argv.slice(2);
+const tabIdx = args.indexOf("--tab");
+const tabId = tabIdx !== -1 ? args[tabIdx + 1] : null;
+
 const b = await Promise.race([
 	puppeteer.connect({
 		browserURL: "http://localhost:9222",
@@ -16,7 +20,17 @@ const b = await Promise.race([
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
+let p;
+if (tabId) {
+	const pages = await b.pages();
+	p = pages.find((pg) => pg.target()._targetId === tabId);
+	if (!p) {
+		console.error(`✗ No tab found with id: ${tabId}`);
+		process.exit(1);
+	}
+} else {
+	p = (await b.pages()).at(-1);
+}
 
 if (!p) {
 	console.error("✗ No active tab found");

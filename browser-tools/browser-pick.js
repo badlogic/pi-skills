@@ -2,11 +2,16 @@
 
 import puppeteer from "puppeteer-core";
 
-const message = process.argv.slice(2).join(" ");
+const args = process.argv.slice(2);
+const tabIdx = args.indexOf("--tab");
+const tabId = tabIdx !== -1 ? args[tabIdx + 1] : null;
+const message = args.filter((a, i) => a !== "--tab" && (tabIdx === -1 || i !== tabIdx + 1)).join(" ");
+
 if (!message) {
-	console.log("Usage: browser-pick.js 'message'");
+	console.log("Usage: browser-pick.js [--tab <targetId>] 'message'");
 	console.log("\nExample:");
 	console.log('  browser-pick.js "Click the submit button"');
+	console.log('  browser-pick.js --tab ABC123 "Click the submit button"');
 	process.exit(1);
 }
 
@@ -22,7 +27,17 @@ const b = await Promise.race([
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
+let p;
+if (tabId) {
+	const pages = await b.pages();
+	p = pages.find((pg) => pg.target()._targetId === tabId);
+	if (!p) {
+		console.error(`✗ No tab found with id: ${tabId}`);
+		process.exit(1);
+	}
+} else {
+	p = (await b.pages()).at(-1);
+}
 
 if (!p) {
 	console.error("✗ No active tab found");

@@ -30,31 +30,37 @@ Launch Chrome with remote debugging on `:9222`. Use `--profile` to preserve user
 ```bash
 {baseDir}/browser-nav.js https://example.com
 {baseDir}/browser-nav.js https://example.com --new
+{baseDir}/browser-nav.js https://example.com --tab ABC123
 ```
 
-Navigate to URLs. Use `--new` flag to open in a new tab instead of reusing current tab.
+Navigate to URLs. Use `--new` flag to open in a new tab instead of reusing current tab. When `--new` is used, the output includes a `tab:<targetId>` that can be passed to other commands via `--tab` to target that specific tab.
+
+Use `--tab <targetId>` to navigate a specific tab by its target ID.
 
 ## Evaluate JavaScript
 
 ```bash
 {baseDir}/browser-eval.js 'document.title'
 {baseDir}/browser-eval.js 'document.querySelectorAll("a").length'
+{baseDir}/browser-eval.js --tab ABC123 'document.title'
 ```
 
-Execute JavaScript in the active tab. Code runs in async context. Use this to extract data, inspect page state, or perform DOM operations programmatically.
+Execute JavaScript in the active tab (or a specific tab with `--tab`). Code runs in async context. Use this to extract data, inspect page state, or perform DOM operations programmatically.
 
 ## Screenshot
 
 ```bash
 {baseDir}/browser-screenshot.js
+{baseDir}/browser-screenshot.js --tab ABC123
 ```
 
-Capture current viewport and return temporary file path. Use this to visually inspect page state or verify UI changes.
+Capture current viewport (or a specific tab with `--tab`) and return temporary file path. Use this to visually inspect page state or verify UI changes.
 
 ## Pick Elements
 
 ```bash
 {baseDir}/browser-pick.js "Click the submit button"
+{baseDir}/browser-pick.js --tab ABC123 "Click the submit button"
 ```
 
 **IMPORTANT**: Use this tool when the user wants to select specific DOM elements on the page. This launches an interactive picker that lets the user click elements to select them. The user can select multiple elements (Cmd/Ctrl+Click) and press Enter when done. The tool returns CSS selectors for the selected elements.
@@ -68,14 +74,16 @@ Common use cases:
 
 ```bash
 {baseDir}/browser-cookies.js
+{baseDir}/browser-cookies.js --tab ABC123
 ```
 
-Display all cookies for the current tab including domain, path, httpOnly, and secure flags. Use this to debug authentication issues or inspect session state.
+Display all cookies for the current tab (or a specific tab with `--tab`) including domain, path, httpOnly, and secure flags. Use this to debug authentication issues or inspect session state.
 
 ## Extract Page Content
 
 ```bash
 {baseDir}/browser-content.js https://example.com
+{baseDir}/browser-content.js https://example.com --tab ABC123
 ```
 
 Navigate to a URL and extract readable content as markdown. Uses Mozilla Readability for article extraction and Turndown for HTML-to-markdown conversion. Works on pages with JavaScript content (waits for page to load).
