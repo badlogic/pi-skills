@@ -22,15 +22,18 @@ const b = await Promise.race([
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
+const pages = await b.pages();
+const types = await Promise.all(pages.map(p => p.target().type()));
+const idx = types.findIndex(t => t === 'page');
+const page = pages[idx >= 0 ? idx : 0];
 
-if (!p) {
+if (!page) {
 	console.error("✗ No active tab found");
 	process.exit(1);
 }
 
 // Inject pick() helper into current page
-await p.evaluate(() => {
+await page.evaluate(() => {
 	if (!window.pick) {
 		window.pick = async (message) => {
 			if (!message) {
@@ -142,7 +145,7 @@ await p.evaluate(() => {
 	}
 });
 
-const result = await p.evaluate((msg) => window.pick(msg), message);
+const result = await page.evaluate((msg) => window.pick(msg), message);
 
 if (Array.isArray(result)) {
 	for (let i = 0; i < result.length; i++) {
@@ -159,4 +162,4 @@ if (Array.isArray(result)) {
 	console.log(result);
 }
 
-await b.disconnect();
+process.exit(0);

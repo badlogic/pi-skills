@@ -32,8 +32,12 @@ if (newTab) {
 	const p = await b.newPage();
 	await p.goto(url, { waitUntil: "domcontentloaded" });
 	console.log("✓ Opened:", url);
+	process.exit(0);
 } else {
-	const p = (await b.pages()).at(-1);
+	const pages = await b.pages();
+	const types = await Promise.all(pages.map(p => p.target().type()));
+	const idx = types.findIndex(t => t === 'page');
+	const p = pages[idx >= 0 ? idx : 0];
 	await p.goto(url, { waitUntil: "domcontentloaded" });
 	if (reload) {
 		await p.reload({ waitUntil: "domcontentloaded" });
@@ -41,4 +45,4 @@ if (newTab) {
 	console.log("✓ Navigated to:", url);
 }
 
-await b.disconnect();
+process.exit(0);
