@@ -1,0 +1,18 @@
+{
+	"name": "google-search",
+	"version": "1.0.0",
+	"type": "module",
+	"description": "Google Search and content extraction via Google Custom Search API",
+	"author": "Gemini CLI",
+	"license": "MIT",
+	"dependencies": {
+		"@google-cloud/local-auth": "^3.0.1",
+		"@mozilla/readability": "^0.6.0",
+		"google-auth-library": "^9.15.1",
+		"googleapis": "^144.0.0",
+		"jsdom": "^27.0.1",
+		"open": "^10.1.0",
+		"turndown": "^7.2.2",
+		"turndown-plugin-gfm": "^1.0.2"
+	}
+}
