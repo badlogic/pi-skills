@@ -66,6 +66,10 @@ Navigate to URLs. Use `--new` flag to open in a new tab instead of reusing curre
 - **Element states**: checked, disabled, expanded, pressed, selected, level, active
 - **Cursor indicators** (`[cursor=pointer]`)
 
+Options:
+- `--depth N` — limit tree to depths 0 through N (saves context on complex pages)
+- `--boxes` / `-b` — include bounding box coordinates `[box=x,y,w,h]` for spatial reasoning
+
 #### Page Selection
 
 When browser has multiple tabs:
@@ -210,6 +214,18 @@ Navigate to a URL and extract readable content as markdown. Uses Mozilla Readabi
 ```
 
 **CRITICAL**: NEVER invent, guess, or construct URLs. Only use URLs exactly as discovered in ARIA snapshot.
+
+**Managing context window on complex pages:**
+```bash
+# Start with a shallow overview to understand page structure
+{baseDir}/browser-page-structure.js --depth 2
+
+# Then get full detail once you know what to focus on
+{baseDir}/browser-page-structure.js
+
+# Include bounding boxes when spatial reasoning matters (e.g. "top-right button")
+{baseDir}/browser-page-structure.js --boxes
+```
 
 ### DOM Inspection Over Screenshots
 

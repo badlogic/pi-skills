@@ -2116,6 +2116,7 @@ var __ariaSnapshotBundle = (() => {
   // src/ariaSnapshot.ts
   var lastRef = 0;
   function toInternalOptions(options) {
+    const renderBoxes = options.boxes;
     if (options.mode === "ai") {
       return {
         visibility: "ariaOrVisible",
@@ -2123,16 +2124,17 @@ var __ariaSnapshotBundle = (() => {
         refPrefix: options.refPrefix,
         includeGenericRole: true,
         renderActive: !options.doNotRenderActive,
-        renderCursorPointer: true
+        renderCursorPointer: true,
+        renderBoxes
       };
     }
     if (options.mode === "autoexpect") {
-      return { visibility: "ariaAndVisible", refs: "none" };
+      return { visibility: "ariaAndVisible", refs: "none", renderBoxes };
     }
     if (options.mode === "codegen") {
-      return { visibility: "aria", refs: "none", renderStringsAsRegex: true };
+      return { visibility: "aria", refs: "none", renderStringsAsRegex: true, renderBoxes };
     }
-    return { visibility: "aria", refs: "none" };
+    return { visibility: "aria", refs: "none", renderBoxes };
   }
   function generateAriaTree(rootElement, publicOptions) {
     const options = toInternalOptions(publicOptions);
@@ -2407,19 +2409,25 @@ var __ariaSnapshotBundle = (() => {
     }
     return result;
   }
+  function indent(depth) {
+    return "  ".repeat(depth);
+  }
   function renderAriaTree(ariaSnapshot, publicOptions, previousSnapshot) {
     const options = toInternalOptions(publicOptions);
     const lines = [];
+    const iframeDepths = {};
     const includeText = options.renderStringsAsRegex ? textContributesInfo : () => true;
     const renderString = options.renderStringsAsRegex ? convertToBestGuessRegex : (str) => str;
     let nodesToRender = ariaSnapshot.root.role === "fragment" ? ariaSnapshot.root.children : [ariaSnapshot.root];
     const statusMap = compareSnapshots(ariaSnapshot, previousSnapshot);
     if (previousSnapshot)
       nodesToRender = filterSnapshotDiff(nodesToRender, statusMap);
-    const visitText = (text, indent) => {
+    const visitText = (text, depth) => {
+      if (publicOptions.depth && depth > publicOptions.depth)
+        return;
       const escaped = yamlEscapeValueIfNeeded(renderString(text));
       if (escaped)
-        lines.push(indent + "- text: " + escaped);
+        lines.push(indent(depth) + "- text: " + escaped);
     };
     const createKey = (ariaNode, renderCursorPointer) => {
       let key = ariaNode.role;
@@ -2453,20 +2461,33 @@ var __ariaSnapshotBundle = (() => {
         if (renderCursorPointer && hasPointerCursor(ariaNode))
           key += " [cursor=pointer]";
       }
+      if (options.renderBoxes) {
+        const element = ariaNodeElement(ariaNode);
+        if (element) {
+          const r = element.getBoundingClientRect();
+          key += ` [box=${Math.round(r.x)},${Math.round(r.y)},${Math.round(r.width)},${Math.round(r.height)}]`;
+        }
+      }
       return key;
     };
     const getSingleInlinedTextChild = (ariaNode) => {
       return ariaNode?.children.length === 1 && typeof ariaNode.children[0] === "string" && !Object.keys(ariaNode.props).length ? ariaNode.children[0] : void 0;
     };
-    const visit = (ariaNode, indent, renderCursorPointer) => {
+    const visit = (ariaNode, depth, renderCursorPointer) => {
+      if (publicOptions.depth && depth > publicOptions.depth)
+        return;
+      if (ariaNode.role === "iframe" && ariaNode.ref)
+        iframeDepths[ariaNode.ref] = depth;
       if (statusMap.get(ariaNode) === "same" && ariaNode.ref) {
-        lines.push(indent + `- ref=${ariaNode.ref} [unchanged]`);
+        lines.push(indent(depth) + `- ref=${ariaNode.ref} [unchanged]`);
         return;
       }
-      const isDiffRoot = !!previousSnapshot && !indent;
-      const escapedKey = indent + "- " + (isDiffRoot ? "<changed> " : "") + yamlEscapeKeyIfNeeded(createKey(ariaNode, renderCursorPointer));
+      const isDiffRoot = !!previousSnapshot && !depth;
+      const escapedKey = indent(depth) + "- " + (isDiffRoot ? "<changed> " : "") + yamlEscapeKeyIfNeeded(createKey(ariaNode, renderCursorPointer));
       const singleInlinedTextChild = getSingleInlinedTextChild(ariaNode);
-      if (!ariaNode.children.length && !Object.keys(ariaNode.props).length) {
+      const isAtDepthLimit = !!publicOptions.depth && depth === publicOptions.depth;
+      const hasNoChildren = !singleInlinedTextChild && (!ariaNode.children.length || isAtDepthLimit);
+      if (hasNoChildren && !Object.keys(ariaNode.props).length) {
         lines.push(escapedKey);
       } else if (singleInlinedTextChild !== void 0) {
         const shouldInclude = includeText(ariaNode, singleInlinedTextChild);
@@ -2477,24 +2498,23 @@ var __ariaSnapshotBundle = (() => {
       } else {
         lines.push(escapedKey + ":");
         for (const [name, value] of Object.entries(ariaNode.props))
-          lines.push(indent + "  - /" + name + ": " + yamlEscapeValueIfNeeded(value));
-        const childIndent = indent + "  ";
+          lines.push(indent(depth + 1) + "- /" + name + ": " + yamlEscapeValueIfNeeded(value));
         const inCursorPointer = !!ariaNode.ref && renderCursorPointer && hasPointerCursor(ariaNode);
         for (const child of ariaNode.children) {
           if (typeof child === "string")
-            visitText(includeText(ariaNode, child) ? child : "", childIndent);
+            visitText(includeText(ariaNode, child) ? child : "", depth + 1);
           else
-            visit(child, childIndent, renderCursorPointer && !inCursorPointer);
+            visit(child, depth + 1, renderCursorPointer && !inCursorPointer);
         }
       }
     };
     for (const nodeToRender of nodesToRender) {
       if (typeof nodeToRender === "string")
-        visitText(nodeToRender, "");
+        visitText(nodeToRender, 0);
       else
-        visit(nodeToRender, "", !!options.renderCursorPointer);
+        visit(nodeToRender, 0, !!options.renderCursorPointer);
     }
-    return lines.join("\n");
+    return { text: lines.join("\n"), iframeDepths };
   }
   function convertToBestGuessRegex(text) {
     const dynamicContent = [
@@ -2539,8 +2559,6 @@ var __ariaSnapshotBundle = (() => {
       return false;
     if (!node.name)
       return true;
-    if (node.name.length > text.length)
-      return false;
     const substr = text.length <= 200 && node.name.length <= 200 ? longestCommonSubstring(text, node.name) : "";
     let filtered = text;
     while (substr && filtered.includes(substr))

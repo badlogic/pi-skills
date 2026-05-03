@@ -15,11 +15,13 @@ const { values, positionals } = parseArgs({
 		list: { type: 'boolean', short: 'l' },
 		id: { type: 'string' },
 		page: { type: 'string', short: 'p' },
+		depth: { type: 'string' },
+		boxes: { type: 'boolean', short: 'b' },
 	},
 	allowPositionals: true,
 });
 
-if (values.help || positionals.length === 0 && !Object.keys(values).some(k => values[k])) {
+if (values.help) {
 	console.log(`
 browser-page-structure.js - Generate ARIA snapshot from browser page
 
@@ -32,6 +34,8 @@ OPTIONS:
   --id <targetId>          Select page by stable ID (recommended)
   -p, --page <index>      Select page by index (may change if tabs moved)
                            Use 'last' or '-1' for the last tab
+  --depth <N>             Limit tree depth (default: unlimited)
+  -b, --boxes             Include bounding box coordinates [box=x,y,w,h]
 
 EXAMPLES:
   # List all pages
@@ -46,6 +50,12 @@ EXAMPLES:
   # Select last page (default)
   browser-page-structure.js
   browser-page-structure.js --page last
+
+  # Shallow overview (top 3 levels, depths 0-2)
+  browser-page-structure.js --depth 2
+
+  # Include bounding boxes for spatial reasoning
+  browser-page-structure.js --boxes
 
 NOTES:
   - Stable IDs (from --list) persist across tab moves and navigation
@@ -144,21 +154,35 @@ if (!fs.existsSync(ariaBundlePath)) {
 const ariaBundleCode = fs.readFileSync(ariaBundlePath, 'utf8');
 await p.evaluateOnNewDocument(ariaBundleCode);
 await p.evaluate(ariaBundleCode);
-const ariaResult = await p.evaluate(() => {
+
+const ariaOptions = { mode: 'ai' };
+if (values.depth) {
+	const d = parseInt(values.depth, 10);
+	if (isNaN(d) || d < 1) {
+		console.error(`✗ Invalid depth: ${values.depth} (must be a positive integer)`);
+		await b.disconnect();
+		process.exit(1);
+	}
+	ariaOptions.depth = d;
+}
+if (values.boxes)
+	ariaOptions.boxes = true;
+
+const ariaResult = await p.evaluate((opts) => {
 	try {
 		const { generateAriaTree, renderAriaTree } = __ariaSnapshotBundle;
-		const snapshot = generateAriaTree(document.body, { mode: 'ai' });
-		const yaml = renderAriaTree(snapshot, { mode: 'ai' });
-
-		return { yaml };
+		const snapshot = generateAriaTree(document.body, opts);
+		const result = renderAriaTree(snapshot, opts);
+		return { yaml: result.text, iframeDepths: result.iframeDepths };
 	} catch (error) {
 		console.error('[aria-snapshot] Error:', error.message);
 		return {
 			yaml: '',
+			iframeDepths: {},
 			error: error.message
 		};
 	}
-});
+}, ariaOptions);
 
 if (!ariaResult.yaml) {
 	console.error("✗ Could not generate ARIA snapshot:", ariaResult.error || "unknown error");
@@ -172,6 +196,14 @@ console.log(`url: ${pageUrl}`);
 console.log(`title: ${pageTitle}`);
 console.log("");
 console.log(ariaResult.yaml);
+
+if (ariaResult.iframeDepths && Object.keys(ariaResult.iframeDepths).length > 0) {
+	console.log('');
+	console.log('# IFRAMES');
+	for (const [ref, depth] of Object.entries(ariaResult.iframeDepths)) {
+		console.log(`# iframe [ref=${ref}] at depth ${depth} — iframe content is not included in this snapshot`);
+	}
+}
 
 // Exit immediately without disconnecting - process termination will clean up
 process.exit(0);
