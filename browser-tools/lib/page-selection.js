@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * Shared page selection for browser tools.
  *
@@ -21,6 +19,37 @@
 import puppeteer from "puppeteer-core";
 
 const CONNECT_TIMEOUT = 5000;
+const PAGE_INDEX_RE = /^(0|[1-9]\d*)$/;
+
+export function parsePageSelectionArgs(argv) {
+	const positionals = [];
+	const flags = {};
+	for (let i = 0; i < argv.length; i++) {
+		if (argv[i] === '--id') {
+			if (!argv[i + 1] || argv[i + 1].startsWith('-')) {
+				console.error('✗ Missing value for --id');
+				process.exit(1);
+			}
+			flags.id = argv[++i];
+		} else if (argv[i] === '--page' || argv[i] === '-p') {
+			const next = argv[i + 1];
+			if (!next || (next.startsWith('-') && next !== '-1')) {
+				console.error(`✗ Missing value for ${argv[i]}`);
+				process.exit(1);
+			}
+			flags.page = argv[++i];
+		} else if (argv[i] === '--list' || argv[i] === '-l') {
+			flags.list = true;
+		} else if (argv[i] === '--new') {
+			flags.newTab = true;
+		} else if (argv[i].startsWith('--')) {
+			continue;
+		} else {
+			positionals.push(argv[i]);
+		}
+	}
+	return { flags, positionals };
+}
 
 /**
  * Connect to Chrome and select a page based on CLI flags.
@@ -31,22 +60,7 @@ const CONNECT_TIMEOUT = 5000;
  * @returns {Promise<{ browser: import('puppeteer-core').Browser, page: import('puppeteer-core').Page|null, allPages: import('puppeteer-core').Page[] }>}
  */
 export async function connectAndSelectPage(argv, { requirePage = true } = {}) {
-	// Parse flags
-	const positional = [];
-	const flags = {};
-	for (let i = 0; i < argv.length; i++) {
-		if (argv[i] === '--id' && argv[i + 1]) {
-			flags.id = argv[++i];
-		} else if (argv[i] === '--page' && argv[i + 1]) {
-			flags.page = argv[++i];
-		} else if (argv[i] === '--list') {
-			flags.list = true;
-		} else if (argv[i] === '--new') {
-			flags.newTab = true;
-		} else if (!argv[i].startsWith('--')) {
-			positional.push(argv[i]);
-		}
-	}
+	const { flags } = parsePageSelectionArgs(argv);
 
 	// Connect
 	const b = await Promise.race([
@@ -108,8 +122,13 @@ export async function connectAndSelectPage(argv, { requirePage = true } = {}) {
 			p = allPages.at(-1);
 			selectionMethod = 'page=last';
 		} else {
-			const index = parseInt(flags.page, 10);
-			if (isNaN(index) || index < 0 || index >= allPages.length) {
+			if (!PAGE_INDEX_RE.test(flags.page)) {
+				console.error(`✗ Invalid page index: ${flags.page} (must be 0-${allPages.length - 1}, 'last', or '-1')`);
+				await b.disconnect();
+				process.exit(1);
+			}
+			const index = Number(flags.page);
+			if (index >= allPages.length) {
 				console.error(`✗ Invalid page index: ${flags.page} (must be 0-${allPages.length - 1})`);
 				await b.disconnect();
 				process.exit(1);

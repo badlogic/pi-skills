@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
-import { connectAndSelectPage } from "./lib/page-selection.js";
+import { connectAndSelectPage, parsePageSelectionArgs } from "./lib/page-selection.js";
 
 const argv = process.argv.slice(2);
-const newTab = argv.includes("--new");
-const url = argv.find(a => !a.startsWith("--"));
+const { flags, positionals } = parsePageSelectionArgs(argv);
+const newTab = !!flags.newTab;
+const reload = argv.includes("--reload");
+const url = positionals[0];
 
 if (!url) {
-	console.log("Usage: browser-nav.js <url> [--new] [--id <targetId>] [--page <index>] [--reload]");
+	console.log("Usage: browser-nav.js <url> [--new] [--id <targetId>] [--page <index|last|-1>] [--reload]");
 	console.log("\nExamples:");
 	console.log("  browser-nav.js https://example.com                         # Navigate last tab");
 	console.log("  browser-nav.js https://example.com --new                   # Open in new tab");
@@ -18,9 +20,7 @@ if (!url) {
 	process.exit(1);
 }
 
-const reload = argv.includes("--reload");
-
-if (newTab && (argv.includes("--id") || argv.includes("--page"))) {
+if (newTab && (flags.id || flags.page)) {
 	console.error("✗ --new is mutually exclusive with --id and --page");
 	process.exit(1);
 }

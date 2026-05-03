@@ -3,23 +3,41 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { parseArgs } from "node:util";
 import { connectAndSelectPage } from "./lib/page-selection.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const { values } = parseArgs({
-	args: process.argv.slice(2),
-	options: {
-		help: { type: 'boolean', short: 'h' },
-		list: { type: 'boolean', short: 'l' },
-		id: { type: 'string' },
-		page: { type: 'string', short: 'p' },
-		depth: { type: 'string' },
-		boxes: { type: 'boolean', short: 'b' },
-	},
-	allowPositionals: true,
-});
+const argv = process.argv.slice(2);
+const values = {};
+for (let i = 0; i < argv.length; i++) {
+	const arg = argv[i];
+	if (arg === '--help' || arg === '-h') {
+		values.help = true;
+	} else if (arg === '--list' || arg === '-l') {
+		values.list = true;
+	} else if (arg === '--id') {
+		if (!argv[i + 1] || argv[i + 1].startsWith('-')) {
+			console.error('✗ Missing value for --id');
+			process.exit(1);
+		}
+		values.id = argv[++i];
+	} else if (arg === '--page' || arg === '-p') {
+		const next = argv[i + 1];
+		if (!next || (next.startsWith('-') && next !== '-1')) {
+			console.error(`✗ Missing value for ${arg}`);
+			process.exit(1);
+		}
+		values.page = argv[++i];
+	} else if (arg === '--depth') {
+		if (!argv[i + 1] || argv[i + 1].startsWith('-')) {
+			console.error('✗ Missing value for --depth');
+			process.exit(1);
+		}
+		values.depth = argv[++i];
+	} else if (arg === '--boxes' || arg === '-b') {
+		values.boxes = true;
+	}
+}
 
 if (values.help) {
 	console.log(`
@@ -65,7 +83,7 @@ NOTES:
 	process.exit(0);
 }
 
-const { browser: b, page: p } = await connectAndSelectPage(process.argv.slice(2));
+const { browser: b, page: p } = await connectAndSelectPage(argv);
 
 const ariaBundlePath = path.join(__dirname, 'aria-snapshot-bundle.js');
 
@@ -80,13 +98,12 @@ await p.evaluate(ariaBundleCode);
 
 const ariaOptions = { mode: 'ai' };
 if (values.depth) {
-	const d = parseInt(values.depth, 10);
-	if (isNaN(d) || d < 1) {
+	if (!/^(0|[1-9]\d*)$/.test(values.depth) || Number(values.depth) < 1) {
 		console.error(`✗ Invalid depth: ${values.depth} (must be a positive integer)`);
 		await b.disconnect();
 		process.exit(1);
 	}
-	ariaOptions.depth = d;
+	ariaOptions.depth = Number(values.depth);
 }
 if (values.boxes)
 	ariaOptions.boxes = true;

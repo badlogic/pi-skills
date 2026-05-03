@@ -13,21 +13,28 @@ const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const filename = `screenshot-${timestamp}.png`;
 const filepath = join(tmpdir(), filename);
 
+let client;
 try {
 	await p.bringToFront();
-	const client = await p.createCDPSession();
+	client = await p.createCDPSession();
 	await client.send('Page.bringToFront');
 	const { data } = await Promise.race([
 		client.send('Page.captureScreenshot', { format: 'png', fromSurface: true }),
 		new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${SCREENSHOT_TIMEOUT / 1000}s`)), SCREENSHOT_TIMEOUT)),
 	]);
 	await writeFile(filepath, Buffer.from(data, 'base64'));
-	await client.detach();
 	console.log(filepath);
 } catch (e) {
 	console.error("✗ Could not capture screenshot:", e.message);
+	console.error("  Try browser-page-structure.js --boxes, or inspect with browser-eval.js.");
 	await b.disconnect();
 	process.exit(1);
+} finally {
+	if (client) {
+		try {
+			await client.detach();
+		} catch {}
+		}
 }
 
 await b.disconnect();

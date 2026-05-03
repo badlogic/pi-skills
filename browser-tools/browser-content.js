@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import { parseArgs } from "node:util";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
-import { connectAndSelectPage } from "./lib/page-selection.js";
+import { connectAndSelectPage, parsePageSelectionArgs } from "./lib/page-selection.js";
 
 // Global timeout - exit if script takes too long
 const TIMEOUT = 30000;
@@ -14,19 +13,13 @@ setTimeout(() => {
 	process.exit(1);
 }, TIMEOUT).unref();
 
-const { positionals } = parseArgs({
-	args: process.argv.slice(2),
-	options: {
-		id: { type: 'string' },
-		page: { type: 'string' },
-	},
-	allowPositionals: true,
-});
+const argv = process.argv.slice(2);
+const { positionals } = parsePageSelectionArgs(argv);
 
 const url = positionals[0];
 
 if (!url) {
-	console.log("Usage: browser-content.js <url> [--id <targetId>] [--page <index>]");
+	console.log("Usage: browser-content.js <url> [--id <targetId>] [--page <index|last|-1>]");
 	console.log("\nExtracts readable content from a URL as markdown.");
 	console.log("\nExamples:");
 	console.log("  browser-content.js https://example.com");
@@ -35,7 +28,7 @@ if (!url) {
 	process.exit(1);
 }
 
-const { browser: b, page: p } = await connectAndSelectPage(process.argv.slice(2));
+const { browser: b, page: p } = await connectAndSelectPage(argv);
 
 await Promise.race([
 	p.goto(url, { waitUntil: "networkidle2" }),
