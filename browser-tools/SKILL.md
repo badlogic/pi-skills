@@ -169,11 +169,17 @@ Locate elements by standard DOM selectors:
 
 ```bash
 {baseDir}/browser-screenshot.js
+{baseDir}/browser-screenshot.js --list
 {baseDir}/browser-screenshot.js --id A5A3072972ABBE08577A7CD3F62DF08D
 {baseDir}/browser-screenshot.js --page 0
+{baseDir}/browser-screenshot.js --page last --full
 ```
 
-Capture current viewport and return temporary file path. Use sparingly - prefer DOM inspection via `browser-page-structure.js` or `browser-eval.js` for efficiency.
+Capture a screenshot and return a temporary file path.
+- Default: viewport screenshot
+- `--full`: full-page capture using CDP layout metrics (`Page.getLayoutMetrics` + `Page.captureScreenshot` clip); may be slower and can fail on very large pages
+
+The tool does not explicitly call bring-to-front APIs, but opening/navigating tabs via other tools may still activate Chrome at the OS level. Use sparingly—prefer DOM inspection via `browser-page-structure.js` or `browser-eval.js` for efficiency.
 
 ### Pick Elements
 

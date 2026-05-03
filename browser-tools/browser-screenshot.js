@@ -7,7 +7,9 @@ import { connectAndSelectPage } from "./lib/page-selection.js";
 
 const SCREENSHOT_TIMEOUT = 15000;
 
-const { browser: b, page: p } = await connectAndSelectPage(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const fullPage = argv.includes('--full');
+const { browser: b, page: p } = await connectAndSelectPage(argv);
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const filename = `screenshot-${timestamp}.png`;
@@ -15,11 +17,29 @@ const filepath = join(tmpdir(), filename);
 
 let client;
 try {
-	await p.bringToFront();
 	client = await p.createCDPSession();
-	await client.send('Page.bringToFront');
+	const capturePromise = (async () => {
+		if (!fullPage) {
+			return client.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
+		}
+
+		const { contentSize } = await client.send('Page.getLayoutMetrics');
+		const clip = {
+			x: 0,
+			y: 0,
+			width: Math.ceil(contentSize.width),
+			height: Math.ceil(contentSize.height),
+			scale: 1,
+		};
+		return client.send('Page.captureScreenshot', {
+			format: 'png',
+			fromSurface: true,
+			clip,
+		});
+	})();
+
 	const { data } = await Promise.race([
-		client.send('Page.captureScreenshot', { format: 'png', fromSurface: true }),
+		capturePromise,
 		new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${SCREENSHOT_TIMEOUT / 1000}s`)), SCREENSHOT_TIMEOUT)),
 	]);
 	await writeFile(filepath, Buffer.from(data, 'base64'));
