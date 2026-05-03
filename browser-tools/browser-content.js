@@ -1,46 +1,41 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
+import { parseArgs } from "node:util";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
+import { connectAndSelectPage } from "./lib/page-selection.js";
 
 // Global timeout - exit if script takes too long
 const TIMEOUT = 30000;
-const timeoutId = setTimeout(() => {
+setTimeout(() => {
 	console.error("✗ Timeout after 30s");
 	process.exit(1);
 }, TIMEOUT).unref();
 
-const url = process.argv[2];
+const { positionals } = parseArgs({
+	args: process.argv.slice(2),
+	options: {
+		id: { type: 'string' },
+		page: { type: 'string' },
+	},
+	allowPositionals: true,
+});
+
+const url = positionals[0];
 
 if (!url) {
-	console.log("Usage: browser-content.js <url>");
+	console.log("Usage: browser-content.js <url> [--id <targetId>] [--page <index>]");
 	console.log("\nExtracts readable content from a URL as markdown.");
 	console.log("\nExamples:");
 	console.log("  browser-content.js https://example.com");
-	console.log("  browser-content.js https://en.wikipedia.org/wiki/Rust_(programming_language)");
+	console.log("  browser-content.js https://example.com --id A5A3072972ABBE08577A7CD3F62DF08D");
+	console.log("  browser-content.js https://en.wikipedia.org/wiki/Rust_(programming_language) --page 0");
 	process.exit(1);
 }
 
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: "http://localhost:9222",
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
-});
-
-const p = (await b.pages()).at(-1);
-if (!p) {
-	console.error("✗ No active tab found");
-	process.exit(1);
-}
+const { browser: b, page: p } = await connectAndSelectPage(process.argv.slice(2));
 
 await Promise.race([
 	p.goto(url, { waitUntil: "networkidle2" }),
@@ -60,7 +55,6 @@ const doc = new JSDOM(outerHTML, { url: finalUrl });
 const reader = new Readability(doc.window.document);
 const article = reader.parse();
 
-// Convert to markdown
 function htmlToMarkdown(html) {
 	const turndown = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
 	turndown.use(gfm);
@@ -82,7 +76,6 @@ let content;
 if (article && article.content) {
 	content = htmlToMarkdown(article.content);
 } else {
-	// Fallback
 	const fallbackDoc = new JSDOM(outerHTML, { url: finalUrl });
 	const fallbackBody = fallbackDoc.window.document;
 	fallbackBody.querySelectorAll("script, style, noscript, nav, header, footer, aside").forEach((el) => el.remove());
@@ -96,8 +89,9 @@ if (article && article.content) {
 }
 
 console.log(`URL: ${finalUrl}`);
-if (article?.title) console.log(`Title: ${article.title}`);
+if (article?.title)
+	console.log(`Title: ${article.title}`);
 console.log("");
 console.log(content);
 
-process.exit(0);
+await b.disconnect();

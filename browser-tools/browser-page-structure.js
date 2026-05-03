@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "node:util";
+import { connectAndSelectPage } from "./lib/page-selection.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const { values, positionals } = parseArgs({
+const { values } = parseArgs({
 	args: process.argv.slice(2),
 	options: {
 		help: { type: 'boolean', short: 'h' },
@@ -34,7 +34,7 @@ OPTIONS:
   --id <targetId>          Select page by stable ID (recommended)
   -p, --page <index>      Select page by index (may change if tabs moved)
                            Use 'last' or '-1' for the last tab
-  --depth <N>             Limit tree depth (default: unlimited)
+  --depth <N>             Limit tree to depths 0 through N (default: unlimited)
   -b, --boxes             Include bounding box coordinates [box=x,y,w,h]
 
 EXAMPLES:
@@ -65,84 +65,7 @@ NOTES:
 	process.exit(0);
 }
 
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: "http://localhost:9222",
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 10000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
-});
-
-const allPages = await b.pages();
-
-if (allPages.length === 0) {
-	console.error("✗ No pages found in browser");
-	process.exit(1);
-}
-
-if (values.list) {
-	console.log("# AVAILABLE PAGES");
-	console.log("");
-
-	const pageTargets = await Promise.all(allPages.map(async (page, index) => {
-		const target = page.target();
-		const url = page.url();
-		const title = await page.title();
-		return {
-			id: target._targetId,
-			url,
-			title,
-			index,
-		};
-	}));
-
-	pageTargets.forEach(({ id, url, title, index }) => {
-		console.log(`id: ${id}`);
-		console.log(`  index: ${index} (may change if tabs are moved)`);
-		console.log(`  url: ${url}`);
-		console.log(`  title: ${title}`);
-		console.log("");
-	});
-
-	await b.disconnect();
-	process.exit(0);
-}
-
-let p;
-let selectionMethod = '';
-
-if (values.id) {
-	p = allPages.find(page => page.target()._targetId === values.id);
-	selectionMethod = `id="${values.id}"`;
-} else if (values.page) {
-	const indexStr = values.page.toLowerCase();
-	if (indexStr === 'last' || indexStr === '-1') {
-		p = allPages.at(-1);
-		selectionMethod = 'page=last';
-	} else {
-		const index = parseInt(values.page, 10);
-		if (isNaN(index) || index < 0 || index >= allPages.length) {
-			console.error(`✗ Invalid page index: ${values.page} (must be 0-${allPages.length - 1})`);
-			await b.disconnect();
-			process.exit(1);
-		}
-		p = allPages[index];
-		selectionMethod = `page=${index}`;
-	}
-} else {
-	p = allPages.at(-1);
-	selectionMethod = 'page=last (default)';
-}
-
-if (!p) {
-	console.error(`✗ No page found with ${selectionMethod}`);
-	await b.disconnect();
-	process.exit(1);
-}
+const { browser: b, page: p } = await connectAndSelectPage(process.argv.slice(2));
 
 const ariaBundlePath = path.join(__dirname, 'aria-snapshot-bundle.js');
 

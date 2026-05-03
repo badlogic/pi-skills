@@ -1,33 +1,27 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
+import { parseArgs } from "node:util";
+import { connectAndSelectPage } from "./lib/page-selection.js";
 
-const message = process.argv.slice(2).join(" ");
-if (!message) {
-	console.log("Usage: browser-pick.js 'message'");
-	console.log("\nExample:");
-	console.log('  browser-pick.js "Click the submit button"');
-	process.exit(1);
-}
-
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: "http://localhost:9222",
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
+const { positionals } = parseArgs({
+	args: process.argv.slice(2),
+	options: {
+		id: { type: 'string' },
+		page: { type: 'string' },
+	},
+	allowPositionals: true,
 });
 
-const p = (await b.pages()).at(-1);
-
-if (!p) {
-	console.error("✗ No active tab found");
+const message = positionals.join(" ");
+if (!message) {
+	console.log("Usage: browser-pick.js 'message' [--id <targetId>] [--page <index>]");
+	console.log("\nExample:");
+	console.log('  browser-pick.js "Click the submit button"');
+	console.log('  browser-pick.js "Click the submit button" --id A5A3072972ABBE08577A7CD3F62DF08D');
 	process.exit(1);
 }
+
+const { browser: b, page: p } = await connectAndSelectPage(process.argv.slice(2));
 
 // Inject pick() helper into current page
 await p.evaluate(() => {
