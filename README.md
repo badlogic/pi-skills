@@ -48,6 +48,7 @@ git clone https://github.com/badlogic/pi-skills ~/pi-skills
 
 # Symlink individual skills (user-level)
 mkdir -p ~/.claude/skills
+ln -s ~/pi-skills/brave-answer ~/.claude/skills/brave-answer
 ln -s ~/pi-skills/brave-search ~/.claude/skills/brave-search
 ln -s ~/pi-skills/browser-tools ~/.claude/skills/browser-tools
 ln -s ~/pi-skills/gccli ~/.claude/skills/gccli
@@ -59,6 +60,7 @@ ln -s ~/pi-skills/youtube-transcript ~/.claude/skills/youtube-transcript
 
 # Or project-level
 mkdir -p .claude/skills
+ln -s ~/pi-skills/brave-answer .claude/skills/brave-answer
 ln -s ~/pi-skills/brave-search .claude/skills/brave-search
 ln -s ~/pi-skills/browser-tools .claude/skills/browser-tools
 ln -s ~/pi-skills/gccli .claude/skills/gccli
@@ -73,6 +75,7 @@ ln -s ~/pi-skills/youtube-transcript .claude/skills/youtube-transcript
 
 | Skill | Description |
 |-------|-------------|
+| [brave-answer](brave-answer/SKILL.md) | Synthesized answers with citations via the Brave Answers API |
 | [brave-search](brave-search/SKILL.md) | Web search and content extraction via Brave Search |
 | [browser-tools](browser-tools/SKILL.md) | Interactive browser automation via Chrome DevTools Protocol |
 | [gccli](gccli/SKILL.md) | Google Calendar CLI for events and availability |
@@ -104,6 +107,7 @@ The `{baseDir}` placeholder is replaced with the skill's directory path at runti
 
 Some skills require additional setup. Generally, the agent will walk you through that. But if not, here you go:
 
+- **brave-answer**: Requires Node.js. Run `npm install` in the skill directory.
 - **brave-search**: Requires Node.js. Run `npm install` in the skill directory.
 - **browser-tools**: Requires Chrome and Node.js. Run `npm install` in the skill directory.
 - **gccli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gccli`.
