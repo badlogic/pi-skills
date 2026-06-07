@@ -29,9 +29,9 @@ URL="https://github.com/badlogic/pibot/releases/download/$VERSION/$ASSET"
 
 CLEANUP_PATHS=()
 cleanup() {
-  for path in "${CLEANUP_PATHS[@]}"; do
-    rm -rf "$path"
-  done
+  if [ ${#CLEANUP_PATHS[@]} -gt 0 ]; then
+    rm -rf "${CLEANUP_PATHS[@]}"
+  fi
 }
 trap cleanup EXIT
 
