@@ -50,9 +50,49 @@ if (useProfile) {
 	);
 }
 
+// Detect Chrome/Chromium path based on OS
+function getChromePath() {
+	const platform = process.platform;
+	
+	if (platform === "darwin") {
+		// macOS
+		return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+	} else if (platform === "win32") {
+		// Windows - try common installation paths
+		const paths = [
+			process.env.PROGRAMFILES + "\\Google\\Chrome\\Application\\chrome.exe",
+			process.env["PROGRAMFILES(X86)"] + "\\Google\\Chrome\\Application\\chrome.exe",
+			process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe",
+		];
+		for (const p of paths) {
+			try {
+				execSync(`if exist "${p}" exit 0`, { stdio: "ignore", shell: "cmd.exe" });
+				return p;
+			} catch {}
+		}
+		return "chrome.exe"; // fallback, hope it's in PATH
+	} else {
+		// Linux - try common paths (apt, snap, etc.)
+		const paths = [
+			"/usr/bin/google-chrome",
+			"/usr/bin/google-chrome-stable",
+			"/usr/bin/chromium",
+			"/usr/bin/chromium-browser",
+			"/snap/bin/chromium",
+		];
+		for (const p of paths) {
+			try {
+				execSync(`test -x "${p}"`, { stdio: "ignore" });
+				return p;
+			} catch {}
+		}
+		return "google-chrome"; // fallback, hope it's in PATH
+	}
+}
+
 // Start Chrome with flags to force new instance
 spawn(
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	getChromePath(),
 	[
 		"--remote-debugging-port=9222",
 		`--user-data-dir=${SCRAPING_DIR}`,
