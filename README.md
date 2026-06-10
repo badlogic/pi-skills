@@ -109,7 +109,6 @@ Some skills require additional setup. Generally, the agent will walk you through
 - **gccli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gccli`.
 - **gdcli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gdcli`.
 - **gmcli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gmcli`.
-- **subagent**: Requires pi-coding-agent. Install globally with `npm install -g @mariozechner/pi-coding-agent`.
 - **transcribe**: Requires curl and a Groq API key.
 - **vscode**: Requires VS Code with `code` CLI in PATH.
 - **youtube-transcript**: Requires Node.js. Run `npm install` in the skill directory.
