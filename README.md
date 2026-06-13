@@ -53,6 +53,7 @@ ln -s ~/pi-skills/browser-tools ~/.claude/skills/browser-tools
 ln -s ~/pi-skills/gccli ~/.claude/skills/gccli
 ln -s ~/pi-skills/gdcli ~/.claude/skills/gdcli
 ln -s ~/pi-skills/gmcli ~/.claude/skills/gmcli
+ln -s ~/pi-skills/lark-pi-bridge ~/.claude/skills/lark-pi-bridge
 ln -s ~/pi-skills/transcribe ~/.claude/skills/transcribe
 ln -s ~/pi-skills/vscode ~/.claude/skills/vscode
 ln -s ~/pi-skills/youtube-transcript ~/.claude/skills/youtube-transcript
@@ -64,6 +65,7 @@ ln -s ~/pi-skills/browser-tools .claude/skills/browser-tools
 ln -s ~/pi-skills/gccli .claude/skills/gccli
 ln -s ~/pi-skills/gdcli .claude/skills/gdcli
 ln -s ~/pi-skills/gmcli .claude/skills/gmcli
+ln -s ~/pi-skills/lark-pi-bridge .claude/skills/lark-pi-bridge
 ln -s ~/pi-skills/transcribe .claude/skills/transcribe
 ln -s ~/pi-skills/vscode .claude/skills/vscode
 ln -s ~/pi-skills/youtube-transcript .claude/skills/youtube-transcript
@@ -78,6 +80,7 @@ ln -s ~/pi-skills/youtube-transcript .claude/skills/youtube-transcript
 | [gccli](gccli/SKILL.md) | Google Calendar CLI for events and availability |
 | [gdcli](gdcli/SKILL.md) | Google Drive CLI for file management and sharing |
 | [gmcli](gmcli/SKILL.md) | Gmail CLI for email, drafts, and labels |
+| [lark-pi-bridge](lark-pi-bridge/SKILL.md) | Lark/Feishu bidirectional bridge with auto-reply and pi agent integration |
 | [transcribe](transcribe/SKILL.md) | Speech-to-text transcription via Groq Whisper API |
 | [vscode](vscode/SKILL.md) | VS Code integration for diffs and file comparison |
 | [youtube-transcript](youtube-transcript/SKILL.md) | Fetch YouTube video transcripts |
@@ -108,6 +111,7 @@ Some skills require additional setup. Generally, the agent will walk you through
 - **browser-tools**: Requires Chrome and Node.js. Run `npm install` in the skill directory.
 - **gccli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gccli`.
 - **gdcli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gdcli`.
+- **lark-pi-bridge**: Requires [lark-cli](https://github.com/neuters/lark-cli). Install with `brew install neuters/tap/lark-cli`.
 - **gmcli**: Requires Node.js. Install globally with `npm install -g @mariozechner/gmcli`.
 - **subagent**: Requires pi-coding-agent. Install globally with `npm install -g @mariozechner/pi-coding-agent`.
 - **transcribe**: Requires curl and a Groq API key.

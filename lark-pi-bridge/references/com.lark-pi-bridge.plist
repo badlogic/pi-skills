@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 
+  lark-pi-bridge launchd plist
+  安装: cp com.lark-pi-bridge.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.lark-pi-bridge.plist
+  卸载: launchctl unload ~/Library/LaunchAgents/com.lark-pi-bridge.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lark-pi-bridge</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/johnwick/.pi/agent/skills/lark-pi-bridge/scripts/bridge.sh</string>
+        <string>start</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/Users/johnwick/.pi/agent/data/lark-bridge/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/johnwick/.pi/agent/data/lark-bridge/launchd.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/johnwick</string>
+    </dict>
+    <key>UserName</key>
+    <string>johnwick</string>
+</dict>
+</plist>
