@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, execSync } from "node:child_process";
+import { platform } from "node:os";
 import puppeteer from "puppeteer-core";
 
 const useProfile = process.argv[2] === "--profile";
@@ -12,7 +13,24 @@ if (process.argv[2] && process.argv[2] !== "--profile") {
 	process.exit(1);
 }
 
+const isMac = platform() === "darwin";
 const SCRAPING_DIR = `${process.env.HOME}/.cache/browser-tools`;
+
+const CHROME_PATH = isMac
+	? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+	: (() => {
+		// Try common Linux Chrome locations
+		for (const cmd of ["google-chrome-stable", "google-chrome", "chromium-browser", "chromium"]) {
+			try {
+				return execSync(`which ${cmd}`, { stdio: "pipe" }).toString().trim();
+			} catch {}
+		}
+		return null;
+	})();
+
+const PROFILE_DIR = isMac
+	? `${process.env.HOME}/Library/Application Support/Google/Chrome/`
+	: `${process.env.HOME}/.config/google-chrome/`;
 
 // Check if already running on :9222
 try {
@@ -24,6 +42,11 @@ try {
 	console.log("✓ Chrome already running on :9222");
 	process.exit(0);
 } catch {}
+
+if (!CHROME_PATH) {
+	console.error("✗ Chrome not found. Install Google Chrome or Chromium.");
+	process.exit(1);
+}
 
 // Setup profile directory
 execSync(`mkdir -p "${SCRAPING_DIR}"`, { stdio: "ignore" });
@@ -45,14 +68,14 @@ if (useProfile) {
 			--exclude='*/Current Tabs' \
 			--exclude='*/Last Session' \
 			--exclude='*/Last Tabs' \
-			"${process.env.HOME}/Library/Application Support/Google/Chrome/" "${SCRAPING_DIR}/"`,
+			"${PROFILE_DIR}" "${SCRAPING_DIR}/"`,
 		{ stdio: "pipe" },
 	);
 }
 
 // Start Chrome with flags to force new instance
 spawn(
-	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+	CHROME_PATH,
 	[
 		"--remote-debugging-port=9222",
 		`--user-data-dir=${SCRAPING_DIR}`,
