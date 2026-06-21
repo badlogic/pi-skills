@@ -16,9 +16,12 @@ const b = await Promise.race([
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
+const pages = await b.pages();
+const types = await Promise.all(pages.map(p => p.target().type()));
+const idx = types.findIndex(t => t === 'page');
+const page = pages[idx >= 0 ? idx : 0];
 
-if (!p) {
+if (!page) {
 	console.error("✗ No active tab found");
 	process.exit(1);
 }
@@ -27,8 +30,8 @@ const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const filename = `screenshot-${timestamp}.png`;
 const filepath = join(tmpdir(), filename);
 
-await p.screenshot({ path: filepath });
+await page.screenshot({ path: filepath });
 
 console.log(filepath);
 
-await b.disconnect();
+process.exit(0);

@@ -23,14 +23,17 @@ const b = await Promise.race([
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
+const pages = await b.pages();
+const types = await Promise.all(pages.map(p => p.target().type()));
+const idx = types.findIndex(t => t === 'page');
+const page = pages[idx >= 0 ? idx : 0];
 
-if (!p) {
+if (!page) {
 	console.error("✗ No active tab found");
 	process.exit(1);
 }
 
-const result = await p.evaluate((c) => {
+const result = await page.evaluate((c) => {
 	const AsyncFunction = (async () => {}).constructor;
 	return new AsyncFunction(`return (${c})`)();
 }, code);
@@ -50,4 +53,4 @@ if (Array.isArray(result)) {
 	console.log(result);
 }
 
-await b.disconnect();
+process.exit(0);

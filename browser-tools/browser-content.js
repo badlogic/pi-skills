@@ -36,24 +36,28 @@ const b = await Promise.race([
 	process.exit(1);
 });
 
-const p = (await b.pages()).at(-1);
-if (!p) {
+const pages = await b.pages();
+const types = await Promise.all(pages.map(p => p.target().type()));
+const idx = types.findIndex(t => t === 'page');
+const page = pages[idx >= 0 ? idx : 0];
+
+if (!page) {
 	console.error("✗ No active tab found");
 	process.exit(1);
 }
 
 await Promise.race([
-	p.goto(url, { waitUntil: "networkidle2" }),
+	page.goto(url, { waitUntil: "networkidle2" }),
 	new Promise((r) => setTimeout(r, 10000)),
 ]).catch(() => {});
 
 // Get HTML via CDP (works even with TrustedScriptURL restrictions)
-const client = await p.createCDPSession();
+const client = await page.createCDPSession();
 const { root } = await client.send("DOM.getDocument", { depth: -1, pierce: true });
 const { outerHTML } = await client.send("DOM.getOuterHTML", { nodeId: root.nodeId });
 await client.detach();
 
-const finalUrl = p.url();
+const finalUrl = page.url();
 
 // Extract with Readability
 const doc = new JSDOM(outerHTML, { url: finalUrl });
