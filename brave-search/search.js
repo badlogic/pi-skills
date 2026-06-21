@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
+
+// Load environment variables from .env file in script's directory
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+config({ path: join(scriptDir, ".env") });
 
 const args = process.argv.slice(2);
 
