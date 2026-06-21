@@ -10,7 +10,7 @@ Local speech-to-text using `parakeet-cpp-transcribe` on Apple Silicon macOS.
 ## Usage
 
 ```bash
-{baseDir}/transcribe.sh <audio-file>
+./transcribe.sh <audio-file>
 ```
 
 The first run downloads the macOS arm64 binary from the latest `badlogic/pibot` GitHub release into the extension's ignored `bin` directory:
