@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --use-env-proxy
 
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
