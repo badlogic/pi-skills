@@ -24,7 +24,7 @@ try {
   const transcript = await YoutubeTranscript.fetchTranscript(extractedId);
   
   for (const entry of transcript) {
-    const timestamp = formatTimestamp(entry.offset / 1000);
+    const timestamp = formatTimestamp(entry.offset);
     console.log(`[${timestamp}] ${entry.text}`);
   }
 } catch (error) {
