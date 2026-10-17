@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "parallel-search": {
+      "description": "Parallel web search and page fetching",
+      "baseUrl": "https://search.parallel.ai/mcp",
+      "headers": {
+        "User-Agent": "pi-skills/parallel-search (https://github.com/badlogic/pi-skills)"
+      }
+    }
+  },
+  "imports": []
+}
